@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Обратный отсчёт · 30.06.2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --dark:#2c3e35;--dark2:#354940;--dark3:#1e2d27;
+  --gold:#c9a84c;--gold2:#e8c96a;--gold3:#fdf3d8;
+  --teal:#4a8c7a;--teal2:#6db4a0;
+  --bg:#eef2ee;--bg2:#e4ebe4;
+  --card:rgba(255,255,255,0.82);--card-b:rgba(255,255,255,0.95);
+  --text:#1e2d27;--muted:#6b7d72;--light:#a8b8af;
+  --shadow:0 2px 18px rgba(44,62,53,0.10),0 1px 4px rgba(0,0,0,0.05);
+  --shadow-lg:0 8px 48px rgba(44,62,53,0.16),0 2px 8px rgba(0,0,0,0.07);
+  --r:22px;--card-w:240px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:'Outfit',sans-serif;font-weight:300;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 60% 50% at 80% 10%,rgba(201,168,76,.10) 0%,transparent 65%),
+    radial-gradient(ellipse 50% 40% at 10% 90%,rgba(74,140,122,.10) 0%,transparent 65%),
+    linear-gradient(150deg,#f2f7f2 0%,#eaf0ea 50%,#e3ece3 100%)}
+body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:radial-gradient(circle,rgba(44,62,53,.07) 1px,transparent 1px);background-size:28px 28px}
+
+/* ── Ribbon ── */
+.ribbon{position:fixed;top:0;left:0;right:0;z-index:60;
+  display:flex;align-items:center;justify-content:center;gap:12px;padding:7px 20px;
+  background:rgba(44,62,53,.96);backdrop-filter:blur(16px);
+  font-size:.82rem;font-weight:300;letter-spacing:.07em;color:rgba(255,255,255,.55);
+  animation:fadeDown .5s ease both}
+.ribbon strong{color:var(--gold);font-weight:600;font-size:.92rem}
+.ribbon-sep{opacity:.25}
+.sync-badge{
+  position:fixed;top:8px;right:16px;z-index:61;
+  display:flex;align-items:center;gap:5px;
+  font-family:'Outfit',sans-serif;font-size:.7rem;font-weight:400;
+  color:rgba(255,255,255,.45);letter-spacing:.03em;
+  transition:color .3s;
+}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.2);transition:background .3s;flex-shrink:0}
+.sync-badge.syncing .sync-dot{background:var(--gold);animation:pulse 1s infinite}
+.sync-badge.saved   .sync-dot{background:var(--teal2)}
+.sync-badge.error   .sync-dot{background:#ef4444}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── Header ── */
+.header{position:relative;z-index:10;text-align:center;padding:60px 20px 6px;
+  animation:fadeDown .7s .1s ease both;opacity:0;animation-fill-mode:forwards}
+.header-sup{font-size:.78rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:var(--teal);margin-bottom:10px}
+.header h1{font-family:'Playfair Display',serif;font-style:italic;font-weight:400;
+  font-size:clamp(1.8rem,3.5vw,2.8rem);color:var(--dark3);letter-spacing:-.01em;line-height:1.1}
+
+/* ── Global progress ── */
+.global-progress{position:relative;z-index:10;max-width:520px;margin:16px auto 0;padding:0 20px;
+  animation:fadeUp .8s .3s ease both;opacity:0;animation-fill-mode:forwards}
+.gp-label{display:flex;justify-content:space-between;font-size:.8rem;font-weight:300;color:var(--muted);letter-spacing:.04em;margin-bottom:6px}
+.gp-label span:last-child{color:var(--gold);font-weight:600}
+.gp-track{height:6px;border-radius:4px;background:rgba(44,62,53,.1);overflow:hidden}
+.gp-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--teal2),var(--gold));width:0%;transition:width 1s .5s cubic-bezier(.4,0,.2,1)}
+
+/* ── Canvas ── */
+.canvas-wrap{position:relative;z-index:5;display:flex;align-items:center;justify-content:center;min-height:920px;padding:20px}
+#svg-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1;overflow:visible}
+.radial-wrap{position:relative;width:min(1060px,96vw);height:min(1060px,96vw);display:flex;align-items:center;justify-content:center}
+
+/* ── Center node ── */
+.center-node{position:relative;z-index:10;flex-shrink:0;width:230px;height:230px;border-radius:50%;
+  background:linear-gradient(145deg,var(--dark) 0%,var(--dark2) 100%);
+  border:3px solid rgba(201,168,76,.3);
+  box-shadow:0 0 0 16px rgba(44,62,53,.06),var(--shadow-lg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  animation:popIn .8s cubic-bezier(.34,1.56,.64,1) both}
+.progress-ring-wrap{position:absolute;inset:-16px}
+.ring-svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:rgba(201,168,76,.12);stroke-width:4}
+.ring-time{fill:none;stroke:rgba(74,140,122,.5);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)}
+.ring-tasks{fill:none;stroke:var(--gold);stroke-width:3.5;stroke-linecap:round;transition:stroke-dashoffset 1.4s .15s cubic-bezier(.4,0,.2,1);opacity:.9}
+.center-date{font-family:'Playfair Display',serif;font-size:1.6rem;color:var(--gold);line-height:1.05;font-weight:400}
+.center-budget-label{font-size:.72rem;color:rgba(255,255,255,.35);margin-top:5px;font-weight:300;letter-spacing:.04em;text-transform:uppercase}
+.center-budget{font-size:1.15rem;color:rgba(255,255,255,.85);margin-top:2px;font-weight:500;letter-spacing:-.01em}
+.center-pct{font-size:.88rem;font-weight:600;color:var(--gold2);margin-top:4px}
+.center-days{font-size:.68rem;color:rgba(255,255,255,.28);margin-top:3px;font-weight:200}
+
+/* ── Cards ── */
+.goal-card{position:absolute;width:var(--card-w);z-index:8;
+  background:var(--card);border:1.5px solid var(--card-b);border-radius:var(--r);
+  box-shadow:var(--shadow);backdrop-filter:blur(14px);padding:16px;cursor:pointer;
+  opacity:0;transform:scale(.7) translateY(10px);transition:box-shadow .25s,border-color .25s,transform .2s}
+.goal-card.visible{animation:cardIn .55s var(--delay,0s) cubic-bezier(.34,1.56,.64,1) both}
+@keyframes cardIn{from{opacity:0;transform:scale(.65) translateY(14px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.goal-card:hover{box-shadow:var(--shadow-lg);border-color:rgba(201,168,76,.4);transform:translateY(-3px) scale(1.025)!important}
+.goal-card.active{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,.15),var(--shadow-lg)}
+.card-bar{height:3px;border-radius:2px;margin-bottom:12px}
+.card-title{font-size:.92rem;font-weight:500;color:var(--text);line-height:1.35;margin-bottom:9px;letter-spacing:.01em}
+.card-meta{display:flex;flex-direction:column;gap:4px}
+.card-row{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.card-row svg{opacity:.4;flex-shrink:0}
+.card-field{display:inline-flex;align-items:center;border-radius:5px;padding:1px 5px;cursor:text;transition:background .15s;font-weight:400}
+.card-field:hover{background:rgba(201,168,76,.10)}
+.card-field input{border:none;outline:none;background:transparent;font-family:inherit;font-size:inherit;color:var(--text);width:110px;font-weight:500}
+.card-prog-wrap{margin-top:10px}
+.card-prog-label{display:flex;justify-content:space-between;font-size:.72rem;color:var(--light);font-weight:300;margin-bottom:4px}
+.card-prog-track{height:4px;border-radius:2px;background:rgba(44,62,53,.1);overflow:hidden}
+.card-prog-fill{height:100%;border-radius:2px;transition:width .6s ease}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:9px}
+.card-badge{font-size:.72rem;font-weight:600;color:var(--dark);background:var(--gold3);border-radius:20px;padding:3px 9px;border:1px solid rgba(201,168,76,.2)}
+.card-photo-btn{width:26px;height:26px;border-radius:7px;border:1.5px solid rgba(74,140,122,.3);background:transparent;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--teal);
+  transition:background .15s,transform .15s;padding:0}
+.card-photo-btn:hover{background:rgba(74,140,122,.1);transform:scale(1.1)}
+
+/* ── Side panel ── */
+.side-panel{position:fixed;top:0;right:0;width:min(440px,100vw);height:100vh;z-index:100;
+  background:var(--dark);border-left:1px solid rgba(201,168,76,.15);
+  box-shadow:-8px 0 50px rgba(0,0,0,.25);
+  transform:translateX(100%);transition:transform .36s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden}
+.side-panel.open{transform:translateX(0)}
+.panel-header{padding:24px 24px 16px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:flex-start;gap:12px}
+.panel-color-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.panel-title{font-family:'Playfair Display',serif;font-style:italic;font-size:1.3rem;color:rgba(255,255,255,.92);flex:1;line-height:1.2;font-weight:400}
+.panel-close{background:rgba(255,255,255,.07);border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:1rem;padding:6px 9px;border-radius:8px;transition:color .15s,background .15s}
+.panel-close:hover{color:var(--gold);background:rgba(201,168,76,.12)}
+.panel-meta{padding:12px 24px;display:flex;gap:14px;flex-wrap:wrap;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.07)}
+.panel-meta-item{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,.45);font-weight:300}
+.panel-prog{padding:12px 24px;border-bottom:1px solid rgba(255,255,255,.07)}
+.panel-prog-top{display:flex;justify-content:space-between;font-size:.78rem;color:rgba(255,255,255,.4);margin-bottom:6px}
+.panel-prog-top span:last-child{color:var(--gold);font-weight:600}
+.panel-prog-track{height:5px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
+.panel-prog-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--teal2),var(--gold));transition:width .5s ease}
+.panel-tasks{flex:1;overflow-y:auto;padding:16px 24px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.1) transparent}
+.panel-tasks::-webkit-scrollbar{width:4px}
+.panel-tasks::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:4px}
+.panel-tasks-label{font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:13px}
+.task-item{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer}
+.task-item:last-child{border-bottom:none}
+.task-left{display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0}
+.task-check{flex-shrink:0;width:22px;height:22px;border-radius:6px;
+  border:1.5px solid rgba(255,255,255,.2);background:transparent;
+  display:flex;align-items:center;justify-content:center;margin-top:2px;
+  transition:background .18s,border-color .18s,transform .12s;cursor:pointer}
+.task-item.done .task-check{background:var(--gold);border-color:var(--gold);transform:scale(1.06)}
+.check-icon{opacity:0;transform:scale(.4);transition:opacity .18s,transform .18s;color:var(--dark3);display:flex;align-items:center;justify-content:center}
+.task-item.done .check-icon{opacity:1;transform:scale(1)}
+.task-text{font-size:.92rem;color:rgba(255,255,255,.75);line-height:1.45;font-weight:300;
+  text-decoration:line-through;text-decoration-color:transparent;
+  transition:color .2s,text-decoration-color .2s;word-break:break-word}
+.task-item.done .task-text{color:rgba(255,255,255,.3);text-decoration-color:rgba(255,255,255,.2)}
+.task-del{flex-shrink:0;width:22px;height:22px;border-radius:5px;border:none;background:transparent;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  color:rgba(255,255,255,.2);opacity:0;transform:scale(.8);
+  transition:opacity .15s,color .15s,background .15s,transform .15s;padding:0;margin-top:2px}
+.task-item:hover .task-del{opacity:1;transform:scale(1)}
+.task-del:hover{color:#ef4444;background:rgba(239,68,68,.12)}
+.panel-add{padding:12px 24px 18px;display:flex;gap:8px;border-top:1px solid rgba(255,255,255,.07)}
+.panel-add-inp{flex:1;border:1.5px solid rgba(255,255,255,.12);border-radius:12px;
+  padding:10px 14px;font-family:inherit;font-size:.9rem;font-weight:300;
+  color:rgba(255,255,255,.85);background:rgba(255,255,255,.06);outline:none;transition:border-color .2s}
+.panel-add-inp:focus{border-color:var(--gold)}
+.panel-add-inp::placeholder{color:rgba(255,255,255,.2)}
+.panel-add-btn{border:none;border-radius:12px;background:var(--gold);color:var(--dark3);
+  font-family:inherit;font-size:.86rem;font-weight:600;padding:10px 16px;cursor:pointer;white-space:nowrap;
+  transition:opacity .15s,transform .12s}
+.panel-add-btn:hover{opacity:.87;transform:scale(1.03)}
+
+/* ── Overlay ── */
+.overlay{position:fixed;inset:0;z-index:90;background:rgba(30,45,39,.35);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .3s}
+.overlay.show{opacity:1;pointer-events:all}
+
+/* ── Modal ── */
+.modal-wrap{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .25s;background:rgba(30,45,39,.4);backdrop-filter:blur(4px)}
+.modal-wrap.show{opacity:1;pointer-events:all}
+.modal{background:var(--dark2);border-radius:22px;border:1px solid rgba(201,168,76,.15);
+  box-shadow:0 20px 70px rgba(0,0,0,.4);width:min(680px,96vw);max-height:80vh;
+  overflow:hidden;display:flex;flex-direction:column;
+  transform:scale(.92) translateY(18px);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.modal-wrap.show .modal{transform:scale(1) translateY(0)}
+.modal-header{padding:18px 22px 14px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07)}
+.modal-title{font-family:'Playfair Display',serif;font-style:italic;font-size:1rem;flex:1;font-weight:400;color:rgba(255,255,255,.9)}
+.modal-close{background:rgba(255,255,255,.07);border:none;cursor:pointer;border-radius:7px;width:28px;height:28px;
+  display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:.9rem;transition:background .15s}
+.modal-close:hover{background:rgba(201,168,76,.15)}
+.modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:18px 22px;overflow-y:auto}
+.mood-card{aspect-ratio:4/3;border-radius:12px;background:rgba(255,255,255,.05);
+  border:1.5px dashed rgba(201,168,76,.2);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;color:rgba(255,255,255,.25);font-size:.62rem;cursor:pointer;
+  transition:border-color .2s,background .2s;overflow:hidden;position:relative}
+.mood-card:hover{border-color:var(--gold);background:rgba(201,168,76,.07)}
+.mood-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:10px}
+.mood-card input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+.mood-label{font-size:.58rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--gold);background:rgba(44,62,53,.85);padding:2px 7px;border-radius:20px;z-index:1}
+
+/* ── Budget corner ── */
+.budget-corner{position:fixed;bottom:22px;right:22px;z-index:50;
+  background:var(--dark);border:1px solid rgba(201,168,76,.18);
+  border-radius:var(--r);box-shadow:var(--shadow-lg);
+  padding:16px 20px;min-width:220px;
+  animation:fadeUp 1s .6s ease both;opacity:0;animation-fill-mode:forwards}
+.bc-title{font-size:.72rem;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:10px}
+#mini-pie{display:block;margin:0 auto 10px}
+.budget-legend{display:flex;flex-direction:column;gap:5px}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:.72rem;color:rgba(255,255,255,.45);font-weight:300}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── Loading screen ── */
+.loading-screen{position:fixed;inset:0;z-index:300;
+  background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .5s;
+}
+.loading-screen.hidden{opacity:0;pointer-events:none}
+.loading-spinner{width:40px;height:40px;border:3px solid rgba(201,168,76,.15);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+.loading-text{font-size:.8rem;color:rgba(255,255,255,.35);letter-spacing:.08em}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Animations ── */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popIn{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-thumb{background:rgba(44,62,53,.2);border-radius:5px}
+
+@media(max-width:760px){
+  .radial-wrap{width:100%;height:auto;display:flex;flex-direction:column;gap:14px;padding:16px 0 100px}
+  .center-node{position:relative;margin:0 auto 8px}
+  .goal-card{position:relative!important;left:auto!important;top:auto!important;width:92%;margin:0 auto}
+  .goal-card:hover{transform:translateY(-2px)!important}
+  #svg-lines{display:none}
+  .canvas-wrap{min-height:auto;display:block}
+  .budget-corner{bottom:8px;right:8px;min-width:180px}
+  .side-panel{width:100vw}
+  .modal-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div class="loading-screen" id="loading-screen">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Загрузка данных…</div>
+</div>
+
+<!-- Sync status -->
+<div class="sync-badge" id="sync-badge">
+  <div class="sync-dot"></div>
+  <span id="sync-text">Подключение…</span>
+</div>
+
+<div class="ribbon">
+  <strong id="days-left">—</strong>
+  <span class="ribbon-sep">·</span>
+  <span>дней до финала</span>
+  <span class="ribbon-sep">·</span>
+  <span>30.06.2026</span>
+  <span class="ribbon-sep">·</span>
+  <span id="ribbon-pct">0% задач выполнено</span>
+</div>
+
+<div class="header">
+  <div class="header-sup">Визуальный план</div>
+  <h1>Полгода до большой цели</h1>
+</div>
+
+<div class="global-progress">
+  <div class="gp-label"><span>Общий прогресс задач</span><span id="gp-pct-label">0%</span></div>
+  <div class="gp-track"><div class="gp-fill" id="gp-fill"></div></div>
+</div>
+
+<div class="canvas-wrap">
+  <div class="radial-wrap" id="radial">
+    <svg id="svg-lines" aria-hidden="true"></svg>
+    <div class="center-node" id="center-node">
+      <div class="progress-ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 262 262">
+          <circle class="ring-bg"    cx="131" cy="131" r="121"/>
+          <circle class="ring-time"  id="ring-time"  cx="131" cy="131" r="121" stroke-dasharray="760" stroke-dashoffset="760"/>
+          <circle class="ring-tasks" id="ring-tasks" cx="131" cy="131" r="121" stroke-dasharray="760" stroke-dashoffset="760"/>
+        </svg>
+      </div>
+      <div class="center-date">30.06.2026</div>
+      <div class="center-budget-label">Остаток бюджета</div>
+      <div class="center-budget" id="center-budget">200 000 ₽</div>
+      <div class="center-pct" id="center-pct">0%</div>
+      <div class="center-days" id="center-days">загрузка…</div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="side-panel" id="side-panel">
+  <div class="panel-header">
+    <div class="panel-color-dot" id="panel-dot"></div>
+    <div class="panel-title" id="panel-title"></div>
+    <button class="panel-close" id="panel-close">✕</button>
+  </div>
+  <div class="panel-meta" id="panel-meta"></div>
+  <div class="panel-prog">
+    <div class="panel-prog-top"><span>Прогресс задач</span><span id="pp-label">0 / 0</span></div>
+    <div class="panel-prog-track"><div class="panel-prog-fill" id="pp-fill"></div></div>
+  </div>
+  <div class="panel-tasks" id="panel-tasks"></div>
+  <div class="panel-add">
+    <input class="panel-add-inp" id="add-inp" placeholder="Новая задача…" type="text">
+    <button class="panel-add-btn" id="add-btn">+ Добавить</button>
+  </div>
+</div>
+
+<div class="modal-wrap" id="modal-wrap">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Мудборд</div>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-grid" id="modal-grid"></div>
+  </div>
+</div>
+
+<div class="budget-corner">
+  <div class="bc-title">Бюджет по целям</div>
+  <svg id="mini-pie" width="108" height="108" viewBox="0 0 108 108"></svg>
+  <div class="budget-legend" id="budget-legend"></div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════ */
+const TOTAL_BUDGET = 200000;
+const FINAL_DATE   = new Date('2026-06-30');
+const START_DATE   = new Date('2025-12-26');
+const ANGLES       = [0,45,90,135,180,225,270,315];
+const COLORS       = ['#c9a84c','#4a8c7a','#e8c96a','#6db4a0','#d4936e','#a0c878','#e07a5f','#8ab4d4'];
+
+// Default goal definitions (titles + default tasks/budgets — synced to DB on first run)
+const DEFAULT_GOALS = [
+  {id:1, title:'Ремонт в домике\nдля квартирантов', deadline:'30.03.2026', budget:20000,
+   tasks:['Покрасить кухню, прихожку, потолок в спальне','Переклеить наличники в ванной','Починить комод','Обшить диван и кресла','Собрать кровать и купить матрас','Купить холодильник','Починить стиралку']},
+  {id:2, title:'Сделать фасад\nнового дома', deadline:'30.04.2026', budget:10000,
+   tasks:['Слой клея — выровнять стены','Грунтовка всех стен','Фактурная краска всех стен']},
+  {id:3, title:'Покрасить все дома,\nосвежить фасады', deadline:'15.05.2026', budget:5000,
+   tasks:['Сделать короб под газовую трубу','Доклеить углы после тротуарной плитки','Покрасить все дома одним слоем фасадной краски']},
+  {id:4, title:'Перенести туалет\nв угол двора', deadline:'30.05.2026', budget:15000,
+   tasks:['Снести старый туалет','Построить новый туалет','Проложить тропинку к нему']},
+  {id:5, title:'Доложить двор\nтротуарной плиткой', deadline:'30.06.2026', budget:0,
+   tasks:['Облицевать колодец','Доделать заезд в воротах','Доложить плитку','Сделать тропинку вместо туалета','Перетащить жёлтую землю из огорода']},
+  {id:6, title:'Накопить\n300 000 ₽', deadline:'30.06.2026', budget:0,
+   tasks:['Откладывать по 50 000 ₽ в месяц']},
+  {id:7, title:'Починить Октавию', deadline:'30.04.2026', budget:50000,
+   tasks:['Заменить масла и фильтры (ТО)','Заменить топливный фильтр','Полирнуть кузов и фары','Химчистка салона','Починить кондиционер','Поменять верхний опорный подшипник']},
+  {id:8, title:'Купить кондиционер\nв дом', deadline:'30.03.2026', budget:40000,
+   tasks:['Выбрать модель и марку','Вызвать мастера для установки']},
+];
+
+/* ══════════════════════════════════════════════════════
+   STATE  (rebuilt from DB on load)
+══════════════════════════════════════════════════════ */
+let goals     = JSON.parse(JSON.stringify(DEFAULT_GOALS)); // [{id,title,deadline,budget,tasks:[str]}]
+let taskState = {};   // { "goalId_taskIdx": bool }
+let moodImgs  = {};   // stays in localStorage (images are large)
+let activeId  = null;
+
+/* ══════════════════════════════════════════════════════
+   API HELPERS
+══════════════════════════════════════════════════════ */
+const API = '/api/data';
+
+async function apiFetch(action, body = null) {
+  const opts = body
+    ? { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body) }
+    : { method:'GET' };
+  const res = await fetch(`${API}?action=${action}`, opts);
+  if (!res.ok) throw new Error(`API ${action} failed: ${res.status}`);
+  return res.json();
+}
+
+/* ══════════════════════════════════════════════════════
+   SYNC STATUS UI
+══════════════════════════════════════════════════════ */
+function setSyncStatus(status) {
+  const badge = document.getElementById('sync-badge');
+  const text  = document.getElementById('sync-text');
+  const labels = { syncing:'Сохранение…', saved:'Сохранено', error:'Ошибка сохранения' };
+  badge.className = 'sync-badge ' + status;
+  text.textContent = labels[status] || status;
+}
+
+/* ══════════════════════════════════════════════════════
+   INIT — load from DB, seed if empty
+══════════════════════════════════════════════════════ */
+async function initApp() {
+  try {
+    setSyncStatus('syncing');
+    const data = await apiFetch('load');
+
+    // If DB is empty → seed with defaults
+    if (data.goals.length === 0) {
+      const seedGoals = DEFAULT_GOALS.map(g => ({ id: g.id, deadline: g.deadline, budget: g.budget }));
+      const seedTasks = DEFAULT_GOALS.flatMap(g =>
+        g.tasks.map((text, task_idx) => ({ goal_id: g.id, task_idx, text, done: false }))
+      );
+      await apiFetch('seed', { goals: seedGoals, tasks: seedTasks });
+      // reload
+      const fresh = await apiFetch('load');
+      mergeDBData(fresh);
+    } else {
+      mergeDBData(data);
+    }
+
+    setSyncStatus('saved');
+  } catch (err) {
+    console.error('DB init error:', err);
+    setSyncStatus('error');
+    // Fallback: use defaults in memory (read-only, no persistence)
+  }
+
+  // Moods are always local (base64 images too large for DB)
+  try { moodImgs = JSON.parse(localStorage.getItem('rm_moods') || '{}'); } catch{}
+
+  hideLoading();
+  renderAll();
+}
+
+function mergeDBData({ goals: dbGoals, tasks: dbTasks }) {
+  // Merge DB goal metadata (deadline, budget) into our default structure
+  goals = DEFAULT_GOALS.map(def => {
+    const dbG = dbGoals.find(g => g.id === def.id);
+    return {
+      ...def,
+      deadline: dbG ? dbG.deadline : def.deadline,
+      budget:   dbG ? dbG.budget   : def.budget,
+    };
+  });
+
+  // Rebuild tasks list order from DB
+  goals.forEach(g => {
+    const dbT = dbTasks
+      .filter(t => t.goal_id === g.id)
+      .sort((a,b) => a.task_idx - b.task_idx);
+
+    if (dbT.length > 0) {
+      g.tasks = dbT.map(t => t.text);
+      dbT.forEach(t => { taskState[`${g.id}_${t.task_idx}`] = t.done; });
+    }
+  });
+}
+
+function hideLoading() {
+  document.getElementById('loading-screen').classList.add('hidden');
+}
+
+function renderAll() {
+  updateCountdown();
+  renderCards();
+  renderPie();
+}
+
+/* ══════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════ */
+function parseDate(s){ const[d,m,y]=s.split('.').map(Number); return new Date(y,m-1,d) }
+function daysLeft(){ const n=new Date(); n.setHours(0,0,0,0); return Math.ceil((FINAL_DATE-n)/86400000) }
+function timePct(){ return Math.max(0,Math.min(1,(new Date()-START_DATE)/(FINAL_DATE-START_DATE))) }
+function deadlineRadius(dl,W){
+  const span=FINAL_DATE-START_DATE;
+  const t=Math.max(0,Math.min(1,(parseDate(dl)-START_DATE)/span));
+  return (W/2)*(0.26+t*0.20)*2;
+}
+function globalStats(){
+  let total=0, done=0;
+  goals.forEach(g=>g.tasks.forEach((_,ti)=>{ total++; if(taskState[`${g.id}_${ti}`]) done++; }));
+  return { total, done, pct: total ? Math.round(done/total*100) : 0 };
+}
+function goalStats(id){
+  const g=goals.find(x=>x.id===id);
+  const total=g.tasks.length;
+  const done=g.tasks.filter((_,ti)=>taskState[`${g.id}_${ti}`]).length;
+  return { total, done, pct: total ? Math.round(done/total*100) : 0 };
+}
+function calcRemainingBudget(){
+  let spent=0;
+  goals.forEach(g=>{ if(g.tasks.length && goalStats(g.id).pct===100) spent+=g.budget; });
+  return Math.max(0, TOTAL_BUDGET-spent);
+}
+
+/* ══════════════════════════════════════════════════════
+   COUNTDOWN
+══════════════════════════════════════════════════════ */
+function updateCountdown(){
+  const d=daysLeft();
+  document.getElementById('days-left').textContent = d>0 ? d : '0';
+  document.getElementById('center-days').textContent = d>0 ? `осталось ${d} дн.` : 'Срок истёк';
+  const circ=2*Math.PI*121;
+  const rt=document.getElementById('ring-time');
+  rt.setAttribute('stroke-dasharray', circ.toFixed(1));
+  rt.setAttribute('stroke-dashoffset', (circ*(1-timePct())).toFixed(1));
+  const gs=globalStats();
+  document.getElementById('center-pct').textContent = gs.pct+'%';
+  document.getElementById('ribbon-pct').textContent = gs.pct+'% задач выполнено';
+  document.getElementById('gp-fill').style.width = gs.pct+'%';
+  document.getElementById('gp-pct-label').textContent = gs.pct+'%';
+  const rk=document.getElementById('ring-tasks');
+  rk.setAttribute('stroke-dasharray', circ.toFixed(1));
+  rk.setAttribute('stroke-dashoffset', (circ*(1-gs.pct/100)).toFixed(1));
+  document.getElementById('center-budget').textContent = calcRemainingBudget().toLocaleString('ru-RU')+' ₽';
+}
+
+/* ══════════════════════════════════════════════════════
+   RENDER CARDS
+══════════════════════════════════════════════════════ */
+function renderCards(){
+  const radial=document.getElementById('radial');
+  radial.querySelectorAll('.goal-card').forEach(c=>c.remove());
+  const W=radial.offsetWidth, H=radial.offsetHeight;
+
+  goals.forEach((goal,i)=>{
+    const card=document.createElement('div');
+    card.className='goal-card'; card.id='card-'+goal.id;
+    const color=COLORS[i%COLORS.length];
+    const gs=goalStats(goal.id);
+
+    card.innerHTML=`
+      <div class="card-bar" style="background:${color}"></div>
+      <div class="card-title">${goal.title.replace(/\n/g,'<br>')}</div>
+      <div class="card-meta">
+        <div class="card-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="card-field" data-field="deadline" data-id="${goal.id}">${goal.deadline}</span>
+        </div>
+        <div class="card-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2.5 1.5"/></svg>
+          <span class="card-field" data-field="budget" data-id="${goal.id}">${goal.budget.toLocaleString('ru-RU')} ₽</span>
+        </div>
+      </div>
+      <div class="card-prog-wrap">
+        <div class="card-prog-label"><span>задачи</span><span>${gs.done}/${gs.total}</span></div>
+        <div class="card-prog-track"><div class="card-prog-fill" style="width:${gs.pct}%;background:${color}"></div></div>
+      </div>
+      <div class="card-footer">
+        <span class="card-badge">${gs.pct}%</span>
+        <button class="card-photo-btn" data-mood="${goal.id}" title="Мудборд">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </button>
+      </div>`;
+
+    if(W>720){
+      const angle=(ANGLES[i]-90)*Math.PI/180;
+      const r=deadlineRadius(goal.deadline,W);
+      card.style.position='absolute';
+      card.style.left=(W/2+r*Math.cos(angle)-120)+'px';
+      card.style.top =(H/2+r*Math.sin(angle)-75)+'px';
+    }
+    card.style.setProperty('--delay',(0.08+i*0.07)+'s');
+    radial.appendChild(card);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>card.classList.add('visible')));
+
+    card.addEventListener('click',e=>{
+      if(e.target.closest('.card-photo-btn')){ openMood(goal.id); return; }
+      if(e.target.closest('.card-field')) return;
+      openPanel(goal.id);
+    });
+
+    // Inline edit deadline / budget
+    card.querySelectorAll('.card-field').forEach(f=>{
+      f.addEventListener('click',e=>{
+        e.stopPropagation();
+        if(f.querySelector('input')) return;
+        const type=f.dataset.field, id=parseInt(f.dataset.id);
+        const g=goals.find(x=>x.id===id);
+        const inp=document.createElement('input');
+        inp.value = type==='budget' ? g.budget : g.deadline;
+        f.textContent=''; f.appendChild(inp); inp.focus(); inp.select();
+        const commit=async()=>{
+          if(type==='budget') g.budget=parseInt(inp.value.replace(/\D/g,''))||0;
+          else g.deadline=inp.value.trim()||g.deadline;
+          renderCards(); drawLines(); renderPie(); updateCountdown();
+          try {
+            setSyncStatus('syncing');
+            await apiFetch('update_goal',{ id:g.id, deadline:g.deadline, budget:g.budget });
+            setSyncStatus('saved');
+          } catch{ setSyncStatus('error'); }
+        };
+        inp.addEventListener('blur', commit);
+        inp.addEventListener('keydown', e2=>{ if(e2.key==='Enter') inp.blur(); });
+      });
+    });
+  });
+
+  setTimeout(drawLines, 50);
+  updateCountdown();
+}
+
+/* ══════════════════════════════════════════════════════
+   BEZIER LINES
+══════════════════════════════════════════════════════ */
+function drawLines(){
+  const svg=document.getElementById('svg-lines');
+  const radial=document.getElementById('radial');
+  const center=document.getElementById('center-node');
+  if(!center) return; svg.innerHTML='';
+  const rr=radial.getBoundingClientRect();
+  const cr=center.getBoundingClientRect();
+  const cx=cr.left-rr.left+cr.width/2, cy=cr.top-rr.top+cr.height/2;
+  goals.forEach((goal,i)=>{
+    const card=document.getElementById('card-'+goal.id); if(!card) return;
+    const c2=card.getBoundingClientRect();
+    const tx=c2.left-rr.left+c2.width/2, ty=c2.top-rr.top+c2.height/2;
+    const color=COLORS[i%COLORS.length];
+    const mx=(cx+tx)/2, my=(cy+ty)/2;
+    const dx=tx-cx, dy=ty-cy, len=Math.sqrt(dx*dx+dy*dy)||1;
+    const qx=mx+(-dy/len)*len*0.13, qy=my+(dx/len)*len*0.13;
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${cx.toFixed(1)},${cy.toFixed(1)} Q${qx.toFixed(1)},${qy.toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)}`);
+    path.setAttribute('fill','none'); path.setAttribute('stroke',color);
+    path.setAttribute('stroke-width','1.5'); path.setAttribute('stroke-opacity','0.28');
+    path.setAttribute('stroke-dasharray','4,6'); path.setAttribute('stroke-linecap','round');
+    svg.appendChild(path);
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',tx.toFixed(1)); dot.setAttribute('cy',ty.toFixed(1));
+    dot.setAttribute('r','3.5'); dot.setAttribute('fill',color); dot.setAttribute('opacity','0.35');
+    svg.appendChild(dot);
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   SIDE PANEL
+══════════════════════════════════════════════════════ */
+function openPanel(goalId){
+  const goal=goals.find(g=>g.id===goalId); if(!goal) return;
+  activeId=goalId;
+  const i=goals.findIndex(g=>g.id===goalId);
+  const color=COLORS[i%COLORS.length];
+  document.getElementById('panel-dot').style.background=color;
+  document.getElementById('panel-title').textContent=goal.title.replace(/\n/g,' ');
+  document.getElementById('panel-meta').innerHTML=`
+    <div class="panel-meta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      ${goal.deadline}
+    </div>
+    <div class="panel-meta-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/></svg>
+      ${goal.budget.toLocaleString('ru-RU')} ₽
+    </div>`;
+  refreshPanelProg(goalId);
+  renderTasks(goal, color);
+  document.getElementById('side-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('card-'+goalId)?.classList.add('active');
+}
+
+function refreshPanelProg(goalId){
+  const gs=goalStats(goalId);
+  document.getElementById('pp-label').textContent=`${gs.done} / ${gs.total}`;
+  document.getElementById('pp-fill').style.width=gs.pct+'%';
+}
+
+function closePanel(){
+  document.getElementById('side-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  if(activeId) document.getElementById('card-'+activeId)?.classList.remove('active');
+  activeId=null;
+}
+
+function renderTasks(goal, color){
+  const c=document.getElementById('panel-tasks');
+  c.innerHTML=`<div class="panel-tasks-label">Задачи</div>`;
+  goal.tasks.forEach((task,ti)=>{
+    const done=!!taskState[`${goal.id}_${ti}`];
+    const item=document.createElement('div');
+    item.className='task-item'+(done?' done':'');
+    item.innerHTML=`
+      <div class="task-left">
+        <div class="task-check">
+          <div class="check-icon">
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5,6 4.5,9 10.5,3"/></svg>
+          </div>
+        </div>
+        <div class="task-text">${task}</div>
+      </div>
+      <button class="task-del" title="Удалить задачу">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+    item.querySelector('.task-left').addEventListener('click', ()=>toggleTask(goal.id, ti, item));
+    item.querySelector('.task-del').addEventListener('click',  e=>{ e.stopPropagation(); deleteTask(goal.id, ti); });
+    c.appendChild(item);
+  });
+}
+
+async function toggleTask(goalId, ti, el){
+  const key=`${goalId}_${ti}`;
+  taskState[key]=!taskState[key];
+  el.classList.toggle('done', taskState[key]);
+  refreshPanelProg(goalId);
+  updateCardProgress(goalId);
+  updateCountdown();
+  try {
+    setSyncStatus('syncing');
+    await apiFetch('toggle', { goalId, taskIdx:ti, done:taskState[key] });
+    setSyncStatus('saved');
+  } catch { setSyncStatus('error'); }
+}
+
+async function deleteTask(goalId, ti){
+  const goal=goals.find(g=>g.id===goalId); if(!goal) return;
+  goal.tasks.splice(ti,1);
+  // Reindex in-memory state
+  const newState={};
+  Object.keys(taskState).forEach(key=>{
+    const [gid,idx]=key.split('_').map(Number);
+    if(gid!==goalId){ newState[key]=taskState[key]; return; }
+    if(idx<ti)  newState[key]=taskState[key];
+    if(idx>ti)  newState[`${goalId}_${idx-1}`]=taskState[key];
+  });
+  taskState=newState;
+  const i=goals.findIndex(g=>g.id===goalId);
+  renderTasks(goal, COLORS[i%COLORS.length]);
+  refreshPanelProg(goalId);
+  updateCardProgress(goalId);
+  updateCountdown();
+  try {
+    setSyncStatus('syncing');
+    await apiFetch('delete_task', { goalId, taskIdx:ti });
+    setSyncStatus('saved');
+  } catch { setSyncStatus('error'); }
+}
+
+function updateCardProgress(goalId){
+  const card=document.getElementById('card-'+goalId); if(!card) return;
+  const gs=goalStats(goalId);
+  card.querySelector('.card-badge').textContent=gs.pct+'%';
+  card.querySelector('.card-prog-fill').style.width=gs.pct+'%';
+  const spans=card.querySelectorAll('.card-prog-label span');
+  if(spans[1]) spans[1].textContent=`${gs.done}/${gs.total}`;
+}
+
+async function addTask(){
+  if(!activeId) return;
+  const inp=document.getElementById('add-inp');
+  const text=inp.value.trim(); if(!text) return;
+  const goal=goals.find(g=>g.id===activeId);
+  goal.tasks.push(text);
+  inp.value='';
+  const i=goals.findIndex(g=>g.id===activeId);
+  renderTasks(goal, COLORS[i%COLORS.length]);
+  refreshPanelProg(activeId);
+  updateCardProgress(activeId);
+  updateCountdown();
+  try {
+    setSyncStatus('syncing');
+    await apiFetch('add_task', { goalId:activeId, text });
+    setSyncStatus('saved');
+  } catch { setSyncStatus('error'); }
+}
+
+document.getElementById('add-btn').addEventListener('click', addTask);
+document.getElementById('add-inp').addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+document.getElementById('panel-close').addEventListener('click', closePanel);
+document.getElementById('overlay').addEventListener('click', closePanel);
+
+/* ══════════════════════════════════════════════════════
+   MOODBOARD  (stays in localStorage — images are large)
+══════════════════════════════════════════════════════ */
+function openMood(goalId){
+  const goal=goals.find(g=>g.id===goalId);
+  document.getElementById('modal-title').textContent=goal.title.replace(/\n/g,' ');
+  const grid=document.getElementById('modal-grid'); grid.innerHTML='';
+  ['До','Референс','Процесс','Результат','Детали','Инспирация'].forEach((lbl,si)=>{
+    const key=`${goalId}_${si}`;
+    const card=document.createElement('div'); card.className='mood-card';
+    const ex=moodImgs[key];
+    if(ex){
+      card.innerHTML=`<img src="${ex}" alt="${lbl}"><span class="mood-label">${lbl}</span>`;
+      card.addEventListener('click',()=>{
+        if(confirm('Удалить изображение?')){
+          delete moodImgs[key];
+          localStorage.setItem('rm_moods', JSON.stringify(moodImgs));
+          openMood(goalId);
+        }
+      });
+    } else {
+      card.innerHTML=`
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="rgba(201,168,76,0.4)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="mood-label">${lbl}</span>
+        <input type="file" accept="image/*">`;
+      card.querySelector('input').addEventListener('change',function(){
+        const f=this.files[0]; if(!f) return;
+        const r=new FileReader();
+        r.onload=e=>{ moodImgs[key]=e.target.result; localStorage.setItem('rm_moods',JSON.stringify(moodImgs)); openMood(goalId); };
+        r.readAsDataURL(f);
+      });
+    }
+    grid.appendChild(card);
+  });
+  document.getElementById('modal-wrap').classList.add('show');
+}
+document.getElementById('modal-close').addEventListener('click',()=>document.getElementById('modal-wrap').classList.remove('show'));
+document.getElementById('modal-wrap').addEventListener('click',e=>{ if(e.target===document.getElementById('modal-wrap')) document.getElementById('modal-wrap').classList.remove('show'); });
+
+/* ══════════════════════════════════════════════════════
+   PIE CHART
+══════════════════════════════════════════════════════ */
+function renderPie(){
+  const svg=document.getElementById('mini-pie');
+  const leg=document.getElementById('budget-legend');
+  svg.innerHTML=''; leg.innerHTML='';
+  const cx=54, cy=54, r=42;
+  let total=goals.reduce((s,g)=>s+g.budget,0)||1;
+  let a=-Math.PI/2;
+  goals.forEach((goal,i)=>{
+    if(goal.budget<=0) return;
+    const slice=goal.budget/total;
+    const ea=a+slice*2*Math.PI;
+    const x1=cx+r*Math.cos(a), y1=cy+r*Math.sin(a);
+    const x2=cx+r*Math.cos(ea), y2=cy+r*Math.sin(ea);
+    const color=COLORS[i%COLORS.length];
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r},0,${slice>.5?1:0},1,${x2.toFixed(2)},${y2.toFixed(2)} Z`);
+    path.setAttribute('fill',color); path.setAttribute('opacity','.88');
+    svg.appendChild(path);
+    const li=document.createElement('div'); li.className='legend-item';
+    li.innerHTML=`<div class="legend-dot" style="background:${color}"></div><span>${goal.title.replace(/\n/g,' ').slice(0,22)} — ${goal.budget.toLocaleString('ru-RU')} ₽</span>`;
+    leg.appendChild(li);
+    a=ea;
+  });
+  const hole=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  hole.setAttribute('cx',cx); hole.setAttribute('cy',cy); hole.setAttribute('r','22'); hole.setAttribute('fill','#2c3e35');
+  svg.appendChild(hole);
+  const totalB=goals.reduce((s,g)=>s+g.budget,0);
+  const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
+  txt.setAttribute('x',cx); txt.setAttribute('y',cy+1);
+  txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
+  txt.setAttribute('font-size','6.5'); txt.setAttribute('fill','rgba(255,255,255,0.5)'); txt.setAttribute('font-family','Outfit,sans-serif');
+  txt.textContent=(totalB/1000).toFixed(0)+'k ₽';
+  svg.appendChild(txt);
+}
+
+/* ══════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════ */
+window.addEventListener('load', initApp);
+window.addEventListener('resize', ()=>{ renderCards(); });
+setInterval(updateCountdown, 60000);
+</script>
+</body>
+</html>
