@@ -1,0 +1,15 @@
+{
+  "name": "roadmap-netlify",
+  "version": "1.0.0",
+  "description": "6-month visual roadmap with Netlify DB",
+  "type": "module",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {
+    "@netlify/neon": "^0.1.0"
+  },
+  "devDependencies": {
+    "netlify-cli": "^17.0.0"
+  }
+}
